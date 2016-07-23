@@ -6,18 +6,16 @@ import (
 	"io"
 	"net"
 	"os"
-	"path/filepath"
-	"sync"
 	"time"
 
 	"github.com/pjvds/tidy"
+
+	. "github.com/pjvds/strand/stream"
 )
 
 var log = tidy.Configure().
 	LogFromLevel(tidy.DEBUG).To(tidy.Console).
 	MustBuild()
-
-type Stream *os.File
 
 type AppendRequest struct {
 	Id       StreamId
@@ -25,74 +23,6 @@ type AppendRequest struct {
 }
 
 type UnalignedMessages []byte
-
-type StreamCreator func(id StreamId) (Stream, error)
-
-type StreamMap struct {
-	sync.RWMutex
-	creator StreamCreator
-	streams map[StreamId]Stream
-}
-
-func NewStreamMap(creator StreamCreator) *StreamMap {
-	return &StreamMap{
-		creator: creator,
-		streams: make(map[StreamId]Stream),
-	}
-}
-
-func (this *StreamMap) get(id StreamId) (Stream, error) {
-	stream, ok := func() (Stream, bool) {
-		this.RLock()
-		defer this.RUnlock()
-
-		stream, ok := this.streams[id]
-		return stream, ok
-	}()
-
-	if ok {
-		return stream, nil
-	}
-
-	this.Lock()
-	defer this.Unlock()
-
-	stream, ok = this.streams[id]
-
-	if ok {
-		return stream, nil
-	}
-
-	// we don't have the stream, create it
-	created, err := this.creator(id)
-
-	if err != nil {
-		return nil, err
-	}
-
-	this.streams[id] = created
-	return created, nil
-}
-
-type StreamId string
-
-type StreamDirectory string
-
-func (this StreamDirectory) getOrCreateStream(id StreamId) (Stream, error) {
-	directory := string(this)
-	filename := string(id) + ".str"
-	path := filepath.Join(directory, filename)
-
-	if _, err := os.Stat(path); err != nil {
-		if !os.IsNotExist(err) {
-			return nil, err
-		}
-
-		return os.Create(path)
-	}
-
-	return os.Open(path)
-}
 
 func main() {
 	log.Info("starting")
@@ -102,7 +32,7 @@ func main() {
 	listener, err := net.Listen(network, address)
 
 	streamDirectory := StreamDirectory("/tmp/")
-	streams := NewStreamMap(streamDirectory.getOrCreateStream)
+	streams := NewStreamMap(streamDirectory.OpenOrCreateStream)
 
 	if err != nil {
 		log.WithError(err).With("listen_address", address).Error("listen failure")
@@ -117,7 +47,11 @@ func main() {
 			break
 		}
 
-		go handleConnection(conn, streams)
+		go func() {
+			if err := handleConnection(conn, streams); err != nil {
+				log.WithError(err).Debug("client connection failed")
+			}
+		}()
 	}
 }
 
@@ -181,7 +115,7 @@ func handleConnection(conn net.Conn, streams *StreamMap) error {
 
 	log.With("stream_id", id).Debug("stream id read")
 
-	stream, err := streams.get(StreamId(buffer))
+	stream, err := streams.Get(StreamId(buffer))
 	if err != nil {
 		return err
 	}
@@ -198,7 +132,11 @@ func handleConnection(conn net.Conn, streams *StreamMap) error {
 	mb := float64(copied) / 1e6
 	mbps := mb / elapsed.Seconds()
 
-	log.With("mbps", mbps).Info("connection done")
+	log.Withs(tidy.Fields{
+		"mbps":    mbps,
+		"mb":      mb,
+		"bytes":   copied,
+		"elapsed": elapsed}).Info("connection done")
 
 	return err
 }

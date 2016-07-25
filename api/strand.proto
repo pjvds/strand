@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package api;
+
+service Strand {
+	rpc Append(AppendRequest) returns (AppendResponse);
+	rpc Ping(PingRequest) returns (PingResponse);
+}
+
+message PingRequest {}
+message PingResponse {}
+
+message AppendRequest {
+	string stream = 1;
+	bytes messages = 2;
+}
+
+message AppendResponse {
+	bool ok = 1;
+}

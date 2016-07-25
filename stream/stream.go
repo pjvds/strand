@@ -8,22 +8,22 @@ import (
 
 type Stream *os.File
 
-type StreamCreator func(id StreamId) (Stream, error)
+type Creator func(id Id) (Stream, error)
 
-type StreamMap struct {
+type Map struct {
 	sync.RWMutex
-	creator StreamCreator
-	streams map[StreamId]Stream
+	creator Creator
+	streams map[Id]Stream
 }
 
-func NewStreamMap(creator StreamCreator) *StreamMap {
-	return &StreamMap{
+func NewMap(creator Creator) *Map {
+	return &Map{
 		creator: creator,
-		streams: make(map[StreamId]Stream),
+		streams: make(map[Id]Stream),
 	}
 }
 
-func (this *StreamMap) Get(id StreamId) (Stream, error) {
+func (this *Map) Get(id Id) (Stream, error) {
 	// try to get the stream from memory
 	if stream, ok := func() (Stream, bool) {
 		this.RLock()
@@ -58,11 +58,11 @@ func (this *StreamMap) Get(id StreamId) (Stream, error) {
 	return created, nil
 }
 
-type StreamId string
+type Id string
 
-type StreamDirectory string
+type Directory string
 
-func (this StreamDirectory) OpenOrCreateStream(id StreamId) (Stream, error) {
+func (this Directory) OpenOrCreateStream(id Id) (Stream, error) {
 	directory := string(this)
 	filename := string(id) + ".str"
 	path := filepath.Join(directory, filename)

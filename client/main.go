@@ -9,6 +9,7 @@ import (
 
 	"google.golang.org/grpc"
 
+	"github.com/pjvds/stopwatch"
 	"github.com/pjvds/strand/api"
 	"github.com/urfave/cli"
 )
@@ -39,15 +40,18 @@ func main() {
 				defer conn.Close()
 
 				client := api.NewStrandClient(conn)
-				_, err = client.Append(context.Background(), &api.AppendRequest{
-					Stream:   "client",
-					Messages: make([]byte, 1024),
+				elapsed := stopwatch.Time(func() {
+					_, err = client.Append(context.Background(), &api.AppendRequest{
+						Stream:   "client",
+						Messages: make([]byte, 1024),
+					})
 				})
 
 				if err != nil {
 					fmt.Printf("request failed: %v", err)
 				}
 
+				fmt.Printf("elapsed: %v", elapsed)
 				return nil
 			},
 		},

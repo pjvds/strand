@@ -52,8 +52,8 @@ func main() {
 			},
 		},
 		{
-			Name:    "publish",
-			Aliases: []string{"p"},
+			Name:    "append",
+			Aliases: []string{"a"},
 			Usage:   "publish messages to topic",
 			Flags: []cli.Flag{
 				cli.StringFlag{

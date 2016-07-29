@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 )
 
 type Stream interface {
@@ -41,10 +42,15 @@ func (this *stream) Append(messages UnalignedMessages) (Offset, error) {
 		return EmptyOffset, err
 	}
 
-	this.position += int64(written) + 1
-	this.offset = aligned.LastOffset.Next()
+	return this.advanceHead(written, aligned.DeltaOffset), nil
+}
 
-	return aligned.LastOffset, nil
+func (this *stream) advanceHead(written int, offsetDelta Offset) Offset {
+	atomic.AddInt64(&this.position, int64(written))
+	newOffset := this.offset.Add(offsetDelta)
+	this.offset = newOffset
+
+	return newOffset
 }
 
 type Offset uint64
@@ -53,6 +59,10 @@ const EmptyOffset Offset = 0
 
 func (this Offset) Next() Offset {
 	return Offset(this + 1)
+}
+
+func (this Offset) Add(delta Offset) Offset {
+	return Offset(this + delta)
 }
 
 type Creator func(id Id) (Stream, error)
@@ -72,6 +82,10 @@ func (this UnalignedMessages) Align(position Offset) AlignedMessages {
 	return AlignedMessages{
 		Position: position,
 		Buffer:   this.Buffer,
+
+		FirstOffset: position,
+		DeltaOffset: position.Add(1),
+		LastOffset:  position.Add(1),
 	}
 }
 
@@ -79,7 +93,9 @@ type AlignedMessages struct {
 	Position Offset
 	Buffer   []byte
 
-	LastOffset Offset
+	FirstOffset Offset
+	DeltaOffset Offset
+	LastOffset  Offset
 }
 
 type Map struct {

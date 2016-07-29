@@ -56,6 +56,10 @@ func (this *stream) advanceHead(written int, offsetDelta Offset) Offset {
 
 type Offset uint64
 
+func (this Offset) GoString() string {
+	return fmt.Sprint(this)
+}
+
 const EmptyOffset Offset = 0
 
 func (this Offset) Next() Offset {
@@ -118,23 +122,29 @@ func (this UnalignedMessages) MessageCount() int {
 }
 
 func (this UnalignedMessages) Align(position Offset) AlignedMessages {
-	for i := 0; i < len(this.index); i++ {
-		this.index[i].offset = position.AddInt(i)
+	index := this.index
+	buffer := this.buffer
+
+	delta := Offset(this.MessageCount())
+
+	for i := 0; i < len(index); i++ {
+		index[i].offset = position.AddInt(i)
+		setOffset(buffer, index[i], Offset(position.AddInt(i)))
 	}
 
 	// TODO: align messages
 	return AlignedMessages{
-		Position: position,
+		index: this.index,
 		Buffer:   this.buffer,
 
 		FirstOffset: position,
-		DeltaOffset: position.Add(1),
-		LastOffset:  position.Add(1),
+		DeltaOffset: delta,
+		LastOffset:  position.Add(delta),
 	}
 }
 
 type AlignedMessages struct {
-	Position Offset
+	index []messageIndex
 	Buffer   []byte
 
 	FirstOffset Offset

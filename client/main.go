@@ -4,11 +4,15 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
+	"sync/atomic"
+	"time"
 
 	"golang.org/x/net/context"
 
 	"google.golang.org/grpc"
 
+	"github.com/pjvds/randombytes"
 	"github.com/pjvds/stopwatch"
 	"github.com/pjvds/strand/api"
 	"github.com/urfave/cli"
@@ -54,7 +58,7 @@ func main() {
 		{
 			Name:    "append",
 			Aliases: []string{"a"},
-			Usage:   "publish messages to topic",
+			Usage:   "append messages to topic",
 			Flags: []cli.Flag{
 				cli.StringFlag{
 					Name:   "host",
@@ -74,18 +78,51 @@ func main() {
 				defer conn.Close()
 
 				client := api.NewStrandClient(conn)
-				elapsed := stopwatch.Time(func() {
-					_, err = client.Append(context.Background(), &api.AppendRequest{
-						Stream:   "client",
-						Messages: make([]byte, 1024),
-					})
-				})
 
-				if err != nil {
-					fmt.Printf("request failed: %v", err)
+				var work sync.WaitGroup
+				done := make(chan struct{})
+
+				var bytesSend int64
+				messages := randombytes.Make(8096)
+
+				watch := stopwatch.Start()
+				for i := 0; i < 16; i++ {
+					work.Add(1)
+
+					streamId := fmt.Sprintf("client%v", i)
+
+					go func(streamId string) {
+						defer work.Done()
+
+						for {
+							select {
+							case <-done:
+								return
+							default:
+								_, err = client.Append(context.Background(), &api.AppendRequest{
+									Stream:   streamId,
+									Messages: messages,
+								})
+
+								if err != nil {
+									fmt.Printf("append failed: %v\n", err)
+								}
+
+								atomic.AddInt64(&bytesSend, 8096)
+							}
+						}
+					}(streamId)
 				}
 
-				fmt.Printf("elapsed: %v", elapsed)
+				<-time.After(time.Minute)
+				elapsed := watch.Elapsed()
+
+				close(done)
+
+				work.Wait()
+
+				fmt.Printf("elapsed: %v, bytes_sent: %v", elapsed, bytesSend)
+				fmt.Printf("mbps: %v", (float64(bytesSend)/1e6)/elapsed.Seconds())
 				return nil
 			},
 		},

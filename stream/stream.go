@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"sync"
 	"sync/atomic"
+	"fmt"
 )
 
 type Stream interface {
@@ -65,23 +66,66 @@ func (this Offset) Add(delta Offset) Offset {
 	return Offset(this + delta)
 }
 
+func (this Offset) AddInt(delta int) Offset {
+	return Offset(uint64(this) + uint64(delta))
+}
+
 type Creator func(id Id) (Stream, error)
 
+type messageIndex struct{
+	position int
+	size int
+	offset Offset
+}
+
 type UnalignedMessages struct {
-	Buffer []byte
+	index []messageIndex
+	buffer []byte
 }
 
 func NewUnalignedMessageSet(buffer []byte) (UnalignedMessages, error) {
+	position := 0
+	index := make([]messageIndex, 0, 8)
+
+	for position < len(buffer) {
+		// make sure there are enough bytes left for an int32
+		if position + 4 > len(buffer) {
+			return UnalignedMessages{}, fmt.Errorf("invalid message size at %v", position)
+		}
+		size := int(byteOrder.Uint32(buffer[position:]))
+
+		if position + MESSAGE_SIZE_SIZE + size > len(buffer) {
+			return UnalignedMessages{}, fmt.Errorf("message too short at %v", position)
+		}
+
+		index = append(index, messageIndex{
+			position: position,
+			size: size,
+		})
+
+		position += MESSAGE_SIZE_SIZE + size
+	}
+
+
 	return UnalignedMessages{
-		Buffer: buffer,
+		index: index,
+		buffer: buffer,
 	}, nil
 }
 
+func (this UnalignedMessages) MessageCount() int {
+	return len(this.index)
+}
+
 func (this UnalignedMessages) Align(position Offset) AlignedMessages {
+	for i := 0; i < len(this.index); i++ {
+		this.index[i].offset = position.AddInt(i)
+	}
+
 	// TODO: align messages
 	return AlignedMessages{
 		Position: position,
-		Buffer:   this.Buffer,
+		Buffer:   this.buffer,
 
 		FirstOffset: position,
 		DeltaOffset: position.Add(1),

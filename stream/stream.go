@@ -41,7 +41,7 @@ func (this *stream) Append(messages message.UnalignedSet) (message.Offset, error
 	defer this.writeLock.Unlock()
 
 	aligned := messages.Align(this.offset)
-	buffer := aligned.Buffer
+	buffer := aligned.GetBuffer()
 
 	// TODO: cover too lesser writes
 	written, err := this.file.WriteAt(buffer, this.position)

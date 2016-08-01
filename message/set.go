@@ -50,29 +50,33 @@ func (this UnalignedSet) Align(position Offset) AlignedSet {
 	index := this.index
 	buffer := this.buffer
 
-	delta := Offset(this.MessageCount())
+	messageCount := Offset(this.MessageCount())
 
 	for i := 0; i < len(index); i++ {
 		index[i].offset = position.AddInt(i)
-		setOffset(buffer, index[i], Offset(position.AddInt(i)))
+		alterOffsetInSetBuffer(buffer, index[i], Offset(position.AddInt(i)))
 	}
 
 	// TODO: align messages
 	return AlignedSet{
 		index:  this.index,
-		Buffer: this.buffer,
+		buffer: this.buffer,
 
 		FirstOffset: position,
-		DeltaOffset: delta,
-		LastOffset:  position.Add(delta),
+		DeltaOffset: messageCount,
+		LastOffset:  position.Add(messageCount),
 	}
 }
 
 type AlignedSet struct {
 	index  []setIndex
-	Buffer []byte
+	buffer []byte
 
 	FirstOffset Offset
 	DeltaOffset Offset
 	LastOffset  Offset
+}
+
+func (this *AlignedSet) GetBuffer() []byte {
+	return this.buffer
 }

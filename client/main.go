@@ -18,6 +18,33 @@ import (
 	"github.com/urfave/cli"
 )
 
+type Session struct {
+	client api.StrandClient
+
+	ctx context.Context
+}
+
+func Dial(address string) (*Session, error) {
+	// Set up a connection to the server.
+	conn, err := grpc.Dial(address, grpc.WithInsecure())
+	if err != nil {
+		return nil, err
+	}
+
+	return &Session{
+		client: api.NewStrandClient(conn),
+		ctx:    context.TODO(), // TODO: use cancelable context
+	}, nil
+}
+
+func (this *Session) Append(stream string, message []byte) error {
+	_, err := this.client.Append(ctx, &api.AppendRequest{
+		Stream: stream,
+	})
+
+	return err
+}
+
 func main() {
 	app := cli.NewApp()
 	app.Commands = []cli.Command{

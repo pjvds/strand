@@ -18,6 +18,8 @@ type stream struct {
 
 	offset   Offset
 	position int64
+
+	writeLock sync.Mutex
 }
 
 func NewStream(filename string) (Stream, error) {
@@ -34,6 +36,10 @@ func NewStream(filename string) (Stream, error) {
 }
 
 func (this *stream) Append(messages UnalignedMessages) (Offset, error) {
+	this.writeLock.Lock()
+	defer this.writeLock.Unlock()
+
+
 	aligned := messages.Align(this.offset)
 	buffer := aligned.Buffer
 

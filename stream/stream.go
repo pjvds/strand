@@ -11,7 +11,7 @@ import (
 )
 
 type Stream interface {
-	Append(messages message.UnalignedMessages) (message.Offset, error)
+	Append(messages message.UnalignedSet) (message.Offset, error)
 }
 
 type stream struct {
@@ -36,7 +36,7 @@ func NewStream(filename string) (Stream, error) {
 	}, nil
 }
 
-func (this *stream) Append(messages message.UnalignedMessages) (message.Offset, error) {
+func (this *stream) Append(messages message.UnalignedSet) (message.Offset, error) {
 	this.writeLock.Lock()
 	defer this.writeLock.Unlock()
 

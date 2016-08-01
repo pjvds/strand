@@ -1,16 +1,18 @@
-package stream
+package message
 
-import("testing"
-	"github.com/pjvds/randombytes"
+import (
 	"bytes"
 	"encoding/binary"
+	"testing"
+
+	"github.com/pjvds/randombytes"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewUnalignedMessageSet(t *testing.T) {
 	assert := assert.New(t)
 
-	set, err := NewUnalignedMessageSet(bufferWith5RandomMessages);
+	set, err := NewUnalignedSet(bufferWith5RandomMessages)
 
 	assert.Nil(err)
 	assert.Equal(5, set.MessageCount())
@@ -18,7 +20,7 @@ func TestNewUnalignedMessageSet(t *testing.T) {
 
 func TestUnalignedMessages_Align(t *testing.T) {
 	assert := assert.New(t)
-	unalignedSet, _ := NewUnalignedMessageSet(bufferWith5RandomMessages);
+	unalignedSet, _ := NewUnalignedSet(bufferWith5RandomMessages)
 
 	set := unalignedSet.Align(Offset(12))
 
@@ -34,7 +36,6 @@ func TestUnalignedMessages_Align(t *testing.T) {
 var bufferWith5RandomMessages = func() []byte {
 	buffer := new(bytes.Buffer)
 
-
 	for i := 0; i < 5; i++ {
 		size := i * 50
 		message := randombytes.Make(size)
@@ -45,4 +46,3 @@ var bufferWith5RandomMessages = func() []byte {
 
 	return buffer.Bytes()
 }()
-

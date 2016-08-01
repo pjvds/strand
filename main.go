@@ -37,7 +37,7 @@ func (this *Server) Append(ctx context.Context, request *api.AppendRequest) (*ap
 		return nil, err
 	}
 
-	set, err := message.NewUnalignedMessageSet(request.Messages)
+	set, err := message.NewUnalignedSet(request.Messages)
 	if err != nil {
 		return nil, err
 	}

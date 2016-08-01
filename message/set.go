@@ -2,33 +2,33 @@ package message
 
 import "fmt"
 
-type UnalignedMessages struct {
-	index  []messageIndex
+type UnalignedSet struct {
+	index  []setIndex
 	buffer []byte
 }
 
-type messageIndex struct {
+type setIndex struct {
 	position int
 	size     int
 	offset   Offset
 }
 
-func NewUnalignedMessageSet(buffer []byte) (UnalignedMessages, error) {
+func NewUnalignedSet(buffer []byte) (UnalignedSet, error) {
 	position := 0
-	index := make([]messageIndex, 0, 8)
+	index := make([]setIndex, 0, 8)
 
 	for position < len(buffer) {
 		// make sure there are enough bytes left for an int32
 		if position+4 > len(buffer) {
-			return UnalignedMessages{}, fmt.Errorf("invalid message size at %v", position)
+			return UnalignedSet{}, fmt.Errorf("invalid message size at %v", position)
 		}
 		size := int(byteOrder.Uint32(buffer[position:]))
 
 		if position+MESSAGE_SIZE_SIZE+size > len(buffer) {
-			return UnalignedMessages{}, fmt.Errorf("message too short at %v", position)
+			return UnalignedSet{}, fmt.Errorf("message too short at %v", position)
 		}
 
-		index = append(index, messageIndex{
+		index = append(index, setIndex{
 			position: position,
 			size:     size,
 		})
@@ -36,17 +36,17 @@ func NewUnalignedMessageSet(buffer []byte) (UnalignedMessages, error) {
 		position += MESSAGE_SIZE_SIZE + size
 	}
 
-	return UnalignedMessages{
+	return UnalignedSet{
 		index:  index,
 		buffer: buffer,
 	}, nil
 }
 
-func (this UnalignedMessages) MessageCount() int {
+func (this UnalignedSet) MessageCount() int {
 	return len(this.index)
 }
 
-func (this UnalignedMessages) Align(position Offset) AlignedMessages {
+func (this UnalignedSet) Align(position Offset) AlignedSet {
 	index := this.index
 	buffer := this.buffer
 
@@ -58,7 +58,7 @@ func (this UnalignedMessages) Align(position Offset) AlignedMessages {
 	}
 
 	// TODO: align messages
-	return AlignedMessages{
+	return AlignedSet{
 		index:  this.index,
 		Buffer: this.buffer,
 
@@ -68,8 +68,8 @@ func (this UnalignedMessages) Align(position Offset) AlignedMessages {
 	}
 }
 
-type AlignedMessages struct {
-	index  []messageIndex
+type AlignedSet struct {
+	index  []setIndex
 	Buffer []byte
 
 	FirstOffset Offset

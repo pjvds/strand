@@ -38,7 +38,7 @@ func Dial(address string) (*Session, error) {
 }
 
 func (this *Session) Append(stream string, message []byte) error {
-	_, err := this.client.Append(ctx, &api.AppendRequest{
+	_, err := this.client.Append(this.ctx, &api.AppendRequest{
 		Stream: stream,
 	})
 

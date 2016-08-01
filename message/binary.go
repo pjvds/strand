@@ -1,10 +1,10 @@
-package stream
+package message
 
 import "encoding/binary"
 
 var byteOrder = binary.LittleEndian
 
-const(
+const (
 	MESSAGE_SIZE_SIZE = 4
 )
 

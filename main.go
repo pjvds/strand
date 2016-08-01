@@ -11,6 +11,7 @@ import (
 	"github.com/pjvds/tidy"
 
 	"github.com/pjvds/strand/api"
+	"github.com/pjvds/strand/message"
 	"github.com/pjvds/strand/stream"
 )
 
@@ -36,7 +37,7 @@ func (this *Server) Append(ctx context.Context, request *api.AppendRequest) (*ap
 		return nil, err
 	}
 
-	set, err := stream.NewUnalignedMessageSet(request.Messages)
+	set, err := message.NewUnalignedMessageSet(request.Messages)
 	if err != nil {
 		return nil, err
 	}

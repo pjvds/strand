@@ -49,7 +49,7 @@ func (this *stream) Append(messages message.UnalignedSet) (message.Offset, error
 		return message.EmptyOffset, err
 	}
 
-	return this.advanceHead(written, aligned.DeltaOffset), nil
+	return this.advanceHead(written, aligned.DeltaOffset()), nil
 }
 
 func (this *stream) advanceHead(written int, offsetDelta message.Offset) message.Offset {

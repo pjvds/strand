@@ -1,10 +1,69 @@
 package message
 
-import "fmt"
+import (
+	"bytes"
+	"encoding/binary"
+	"fmt"
+)
+
+type Set struct {
+	index      []setIndex
+	buffer     *bytes.Buffer
+	lastOffset Offset
+}
+
+func (this *Set) Append(message []byte) {
+	position := this.buffer.Len()
+
+	size := MESSAGE_SIZE_SIZE + OFFSET_SIZE + len(message)
+	offset := this.lastOffset.Next()
+
+	// Write appends the given content to the buffer, growing the buffer as needed.
+	// Err is always nil. If the buffer becomes too large, it will panic with ErrTooLarge.
+	// Therefor we don't need to check written bytes or err.
+	binary.Write(this.buffer, byteOrder, size)
+	binary.Write(this.buffer, byteOrder, offset)
+	this.buffer.Write(message)
+
+	this.index = append(this.index, setIndex{
+		position: position,
+		size:     size,
+		offset:   offset,
+	})
+
+	this.lastOffset = offset
+}
+
+func (this *Set) GetBuffer() []byte {
+	return this.buffer.Bytes()
+}
+
+func (this *Set) MessageCount() int {
+	return len(this.index)
+}
+
+func (this *Set) FirstOffset() Offset {
+	if len(this.index) == 0 {
+		return EmptyOffset
+	}
+
+	return this.index[0].offset
+}
+
+func (this *Set) DeltaOffset() Offset {
+	return this.FirstOffset().AddInt(this.MessageCount())
+}
+
+func (this *Set) LastOffset() Offset {
+	if len(this.index) == 0 {
+		return EmptyOffset
+	}
+
+	return this.index[len(this.index)-1].offset
+}
 
 type UnalignedSet struct {
-	index  []setIndex
-	buffer []byte
+	Set
 }
 
 type setIndex struct {
@@ -37,46 +96,38 @@ func NewUnalignedSet(buffer []byte) (UnalignedSet, error) {
 	}
 
 	return UnalignedSet{
-		index:  index,
-		buffer: buffer,
+		Set: Set{
+			index:  index,
+			buffer: bytes.NewBuffer(buffer),
+		},
 	}, nil
 }
 
-func (this UnalignedSet) MessageCount() int {
-	return len(this.index)
-}
-
-func (this UnalignedSet) Align(position Offset) AlignedSet {
+func (this UnalignedSet) Align(startOffset Offset) AlignedSet {
 	index := this.index
 	buffer := this.buffer
 
-	messageCount := Offset(this.MessageCount())
+	// Bytes returns a slice of length b.Len() holding the unread portion of the buffer.
+	// The slice is valid for use only until the next buffer modification (that is,
+	// only until the next call to a method like Read, Write, Reset, or Truncate).
+	// The slice aliases the buffer content at least until the next buffer modification,
+	// immediate changes to the slice will affect the result of future reads.
+	bytes := buffer.Bytes()
 
 	for i := 0; i < len(index); i++ {
-		index[i].offset = position.AddInt(i)
-		alterOffsetInSetBuffer(buffer, index[i], Offset(position.AddInt(i)))
+		offset := startOffset.AddInt(i)
+
+		index[i].offset = offset
+		alterOffsetInSetBuffer(bytes, index[i])
 	}
 
 	// TODO: align messages
 	return AlignedSet{
-		index:  this.index,
-		buffer: this.buffer,
-
-		FirstOffset: position,
-		DeltaOffset: messageCount,
-		LastOffset:  position.Add(messageCount),
+		Set: Set{
+			index:  index,
+			buffer: buffer,
+		},
 	}
 }
 
-type AlignedSet struct {
-	index  []setIndex
-	buffer []byte
-
-	FirstOffset Offset
-	DeltaOffset Offset
-	LastOffset  Offset
-}
-
-func (this *AlignedSet) GetBuffer() []byte {
-	return this.buffer
-}
+type AlignedSet struct{ Set }

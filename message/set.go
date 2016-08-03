@@ -51,7 +51,7 @@ func (this *Set) FirstOffset() Offset {
 }
 
 func (this *Set) DeltaOffset() Offset {
-	return this.FirstOffset().AddInt(this.MessageCount())
+	return this.LastOffset().Sub(this.FirstOffset())
 }
 
 func (this *Set) LastOffset() Offset {

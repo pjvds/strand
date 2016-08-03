@@ -18,6 +18,10 @@ func (this Offset) Add(delta Offset) Offset {
 	return Offset(this + delta)
 }
 
+func (this Offset) Sub(delta Offset) Offset {
+	return Offset(this - delta)
+}
+
 func (this Offset) AddInt(delta int) Offset {
 	return Offset(uint64(this) + uint64(delta))
 }

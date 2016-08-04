@@ -27,7 +27,8 @@ func main() {
 	}
 
 	grpcServer := grpc.NewServer()
-	api.RegisterStrandServer(grpcServer, server.NewServer("/tmp"))
+	strandServer, _ := server.NewServer("/tmp")
+	api.RegisterStrandServer(grpcServer, strandServer)
 
 	log.Withs(tidy.Fields{
 		"network": network,

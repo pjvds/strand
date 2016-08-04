@@ -3,18 +3,23 @@ syntax = "proto3";
 package api;
 
 service Strand {
-	rpc Append(AppendRequest) returns (AppendResponse);
+	rpc Write(WriteRequest) returns (WriteResponse);
 	rpc Ping(PingRequest) returns (PingResponse);
 }
 
 message PingRequest {}
 message PingResponse {}
 
-message AppendRequest {
+message WriteRequest {
 	string stream = 1;
 	bytes messages = 2;
 }
 
-message AppendResponse {
+message ReadRequest {
+	string stream = 1;
+	uint64 offset = 2;
+}
+
+message WriteResponse {
 	bool ok = 1;
 }

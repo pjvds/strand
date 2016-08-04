@@ -16,13 +16,15 @@ type Server struct {
 	streams *stream.Map
 }
 
-func NewServer(directory string) *Server {
+func NewServer(directory string) (*Server, error) {
+	streamDir := stream.Directory(directory)
+
 	return &Server{
-		streams: stream.NewMap(stream.Directory(directory).OpenOrCreateStream),
-	}
+		streams: stream.NewMap(streamDir.OpenOrCreateStream),
+	}, nil
 }
 
-func (this *Server) Append(ctx context.Context, request *api.AppendRequest) (*api.AppendResponse, error) {
+func (this *Server) Write(ctx context.Context, request *api.WriteRequest) (*api.WriteResponse, error) {
 	id := stream.Id(request.Stream)
 	if log.IsDebug() {
 		log.With("stream_id", id).Debug("handling append request")
@@ -49,7 +51,7 @@ func (this *Server) Append(ctx context.Context, request *api.AppendRequest) (*ap
 		return nil, err
 	}
 
-	return &api.AppendResponse{
+	return &api.WriteResponse{
 		Ok: true,
 	}, nil
 }

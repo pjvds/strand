@@ -11,8 +11,9 @@ It is generated from these files:
 It has these top-level messages:
 	PingRequest
 	PingResponse
-	AppendRequest
-	AppendResponse
+	WriteRequest
+	ReadRequest
+	WriteResponse
 */
 package api
 
@@ -52,30 +53,41 @@ func (m *PingResponse) String() string            { return proto.CompactTextStri
 func (*PingResponse) ProtoMessage()               {}
 func (*PingResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
 
-type AppendRequest struct {
+type WriteRequest struct {
 	Stream   string `protobuf:"bytes,1,opt,name=stream" json:"stream,omitempty"`
 	Messages []byte `protobuf:"bytes,2,opt,name=messages,proto3" json:"messages,omitempty"`
 }
 
-func (m *AppendRequest) Reset()                    { *m = AppendRequest{} }
-func (m *AppendRequest) String() string            { return proto.CompactTextString(m) }
-func (*AppendRequest) ProtoMessage()               {}
-func (*AppendRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+func (m *WriteRequest) Reset()                    { *m = WriteRequest{} }
+func (m *WriteRequest) String() string            { return proto.CompactTextString(m) }
+func (*WriteRequest) ProtoMessage()               {}
+func (*WriteRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
 
-type AppendResponse struct {
+type ReadRequest struct {
+	Stream string `protobuf:"bytes,1,opt,name=stream" json:"stream,omitempty"`
+	Offset uint64 `protobuf:"varint,2,opt,name=offset" json:"offset,omitempty"`
+}
+
+func (m *ReadRequest) Reset()                    { *m = ReadRequest{} }
+func (m *ReadRequest) String() string            { return proto.CompactTextString(m) }
+func (*ReadRequest) ProtoMessage()               {}
+func (*ReadRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
+
+type WriteResponse struct {
 	Ok bool `protobuf:"varint,1,opt,name=ok" json:"ok,omitempty"`
 }
 
-func (m *AppendResponse) Reset()                    { *m = AppendResponse{} }
-func (m *AppendResponse) String() string            { return proto.CompactTextString(m) }
-func (*AppendResponse) ProtoMessage()               {}
-func (*AppendResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
+func (m *WriteResponse) Reset()                    { *m = WriteResponse{} }
+func (m *WriteResponse) String() string            { return proto.CompactTextString(m) }
+func (*WriteResponse) ProtoMessage()               {}
+func (*WriteResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
 
 func init() {
 	proto.RegisterType((*PingRequest)(nil), "api.PingRequest")
 	proto.RegisterType((*PingResponse)(nil), "api.PingResponse")
-	proto.RegisterType((*AppendRequest)(nil), "api.AppendRequest")
-	proto.RegisterType((*AppendResponse)(nil), "api.AppendResponse")
+	proto.RegisterType((*WriteRequest)(nil), "api.WriteRequest")
+	proto.RegisterType((*ReadRequest)(nil), "api.ReadRequest")
+	proto.RegisterType((*WriteResponse)(nil), "api.WriteResponse")
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -89,7 +101,7 @@ const _ = grpc.SupportPackageIsVersion3
 // Client API for Strand service
 
 type StrandClient interface {
-	Append(ctx context.Context, in *AppendRequest, opts ...grpc.CallOption) (*AppendResponse, error)
+	Write(ctx context.Context, in *WriteRequest, opts ...grpc.CallOption) (*WriteResponse, error)
 	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
 }
 
@@ -101,9 +113,9 @@ func NewStrandClient(cc *grpc.ClientConn) StrandClient {
 	return &strandClient{cc}
 }
 
-func (c *strandClient) Append(ctx context.Context, in *AppendRequest, opts ...grpc.CallOption) (*AppendResponse, error) {
-	out := new(AppendResponse)
-	err := grpc.Invoke(ctx, "/api.Strand/Append", in, out, c.cc, opts...)
+func (c *strandClient) Write(ctx context.Context, in *WriteRequest, opts ...grpc.CallOption) (*WriteResponse, error) {
+	out := new(WriteResponse)
+	err := grpc.Invoke(ctx, "/api.Strand/Write", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +134,7 @@ func (c *strandClient) Ping(ctx context.Context, in *PingRequest, opts ...grpc.C
 // Server API for Strand service
 
 type StrandServer interface {
-	Append(context.Context, *AppendRequest) (*AppendResponse, error)
+	Write(context.Context, *WriteRequest) (*WriteResponse, error)
 	Ping(context.Context, *PingRequest) (*PingResponse, error)
 }
 
@@ -130,20 +142,20 @@ func RegisterStrandServer(s *grpc.Server, srv StrandServer) {
 	s.RegisterService(&_Strand_serviceDesc, srv)
 }
 
-func _Strand_Append_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AppendRequest)
+func _Strand_Write_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WriteRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(StrandServer).Append(ctx, in)
+		return srv.(StrandServer).Write(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/api.Strand/Append",
+		FullMethod: "/api.Strand/Write",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StrandServer).Append(ctx, req.(*AppendRequest))
+		return srv.(StrandServer).Write(ctx, req.(*WriteRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -171,8 +183,8 @@ var _Strand_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*StrandServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Append",
-			Handler:    _Strand_Append_Handler,
+			MethodName: "Write",
+			Handler:    _Strand_Write_Handler,
 		},
 		{
 			MethodName: "Ping",
@@ -186,17 +198,18 @@ var _Strand_serviceDesc = grpc.ServiceDesc{
 func init() { proto.RegisterFile("strand.proto", fileDescriptor0) }
 
 var fileDescriptor0 = []byte{
-	// 188 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x54, 0x8f, 0xd1, 0x0a, 0x82, 0x30,
-	0x18, 0x85, 0xd1, 0x62, 0xd8, 0x9f, 0x4a, 0xfd, 0x41, 0x88, 0x57, 0xb2, 0xab, 0x20, 0x10, 0xaa,
-	0x27, 0x88, 0x5e, 0x20, 0xd6, 0x13, 0x2c, 0x1c, 0x26, 0xe1, 0xb6, 0x9c, 0xbd, 0x7f, 0x6b, 0xb3,
-	0xd0, 0xbb, 0x9d, 0xff, 0x1c, 0xbe, 0x9d, 0x03, 0xb1, 0xe9, 0x3b, 0x2e, 0xab, 0x52, 0x77, 0xaa,
-	0x57, 0x38, 0xe3, 0xba, 0xa1, 0x09, 0x2c, 0xaf, 0x8d, 0xac, 0x99, 0x78, 0xbd, 0x85, 0xe9, 0x69,
-	0x0a, 0xb1, 0x97, 0x46, 0x2b, 0x69, 0x04, 0xbd, 0x40, 0x72, 0xd6, 0x5a, 0xc8, 0x6a, 0x08, 0xe0,
-	0x16, 0x88, 0x85, 0x08, 0xde, 0x66, 0x41, 0x11, 0xec, 0x16, 0x6c, 0x50, 0x98, 0x43, 0xd4, 0x0a,
-	0x63, 0x78, 0x2d, 0x4c, 0x16, 0x5a, 0x27, 0x66, 0x7f, 0x4d, 0x0b, 0x48, 0x7f, 0x10, 0x8f, 0xc5,
-	0x14, 0x42, 0xf5, 0x74, 0x84, 0x88, 0xd9, 0xd7, 0xf1, 0x01, 0xe4, 0xe6, 0xaa, 0xe1, 0x01, 0x88,
-	0xcf, 0x22, 0x96, 0xb6, 0x5f, 0x39, 0xf9, 0x3d, 0xdf, 0x4c, 0x6e, 0x03, 0x6c, 0x0f, 0xf3, 0x6f,
-	0x67, 0x5c, 0x39, 0x73, 0xb4, 0x26, 0x5f, 0x8f, 0x2e, 0x3e, 0x7c, 0x27, 0x6e, 0xfb, 0xe9, 0x13,
-	0x00, 0x00, 0xff, 0xff, 0x6a, 0xe2, 0xd5, 0x36, 0x0b, 0x01, 0x00, 0x00,
+	// 207 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x84, 0x50, 0xb1, 0x4e, 0x80, 0x30,
+	0x14, 0x0c, 0x88, 0x04, 0x1f, 0x85, 0xc8, 0x1b, 0x0c, 0x61, 0xd1, 0x74, 0x32, 0x31, 0xe9, 0xa0,
+	0xb3, 0x8b, 0x5f, 0x60, 0xea, 0xe0, 0x5c, 0xc3, 0x83, 0x10, 0x03, 0x45, 0x5e, 0xfd, 0x7f, 0x6b,
+	0x69, 0x4c, 0x37, 0xb7, 0xde, 0xdd, 0xeb, 0xe5, 0xee, 0x40, 0xb0, 0x3b, 0xcc, 0x36, 0xaa, 0xfd,
+	0xb0, 0xce, 0xe2, 0x85, 0xd9, 0x17, 0xd9, 0x40, 0xfd, 0xba, 0x6c, 0xb3, 0xa6, 0xaf, 0x6f, 0x62,
+	0x27, 0x5b, 0x10, 0x27, 0xe4, 0xdd, 0x6e, 0x4c, 0xf2, 0x05, 0xc4, 0xfb, 0xb1, 0x38, 0x8a, 0x3a,
+	0xde, 0x40, 0xe9, 0x3d, 0xc8, 0xac, 0x7d, 0x76, 0x97, 0xdd, 0x5f, 0xe9, 0x88, 0x70, 0x80, 0x6a,
+	0x25, 0x66, 0x33, 0x13, 0xf7, 0xb9, 0x57, 0x84, 0xfe, 0xc3, 0xf2, 0x19, 0x6a, 0x4d, 0x66, 0xfc,
+	0xcf, 0xc2, 0xf3, 0x76, 0x9a, 0x98, 0x5c, 0x30, 0x28, 0x74, 0x44, 0xf2, 0x16, 0x9a, 0x18, 0xe1,
+	0xcc, 0x84, 0x2d, 0xe4, 0xf6, 0x33, 0x7c, 0xae, 0xb4, 0x7f, 0x3d, 0x12, 0x94, 0x6f, 0xa1, 0x17,
+	0x2a, 0xb8, 0x0c, 0xa7, 0xd8, 0x29, 0xdf, 0x4d, 0xa5, 0xc9, 0x07, 0x4c, 0xa9, 0xe8, 0xf4, 0x00,
+	0xc5, 0x6f, 0x5b, 0xbc, 0x0e, 0x5a, 0xb2, 0xc3, 0xd0, 0x25, 0xcc, 0x79, 0xfc, 0x51, 0x86, 0xd5,
+	0x9e, 0x7e, 0x02, 0x00, 0x00, 0xff, 0xff, 0xec, 0x0a, 0x89, 0x5a, 0x45, 0x01, 0x00, 0x00,
 }

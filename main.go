@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net"
 	"time"
 
@@ -37,15 +36,6 @@ func main() {
 	if err := grpcServer.Serve(listener); err != nil {
 		log.WithError(err).Fatal("grpc server failed")
 	}
-}
-
-type ReadError struct {
-	Op  string
-	Err error
-}
-
-func (this *ReadError) Error() string {
-	return fmt.Sprintf("%v failed: %v", this.Op, this.Err.Error())
 }
 
 func Stopwatch(do func()) time.Duration {

@@ -37,8 +37,8 @@ func Dial(address string) (*Session, error) {
 	}, nil
 }
 
-func (this *Session) Append(stream string, message []byte) error {
-	_, err := this.client.Append(this.ctx, &api.AppendRequest{
+func (this *Session) Write(stream string, message []byte) error {
+	_, err := this.client.Write(this.ctx, &api.WriteRequest{
 		Stream: stream,
 	})
 
@@ -126,13 +126,13 @@ func main() {
 							case <-done:
 								return
 							default:
-								_, err = client.Append(context.Background(), &api.AppendRequest{
+								_, err = client.Write(context.Background(), &api.WriteRequest{
 									Stream:   streamId,
 									Messages: messages,
 								})
 
 								if err != nil {
-									fmt.Printf("append failed: %v\n", err)
+									fmt.Printf("write failed: %v\n", err)
 								}
 
 								atomic.AddInt64(&bytesSend, 8096)

@@ -46,7 +46,7 @@ func (this *Server) Write(ctx context.Context, request *api.WriteRequest) (*api.
 		return nil, err
 	}
 
-	_, err = s.Append(set)
+	_, err = s.Write(set)
 	if err != nil {
 		return nil, err
 	}
